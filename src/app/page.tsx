@@ -25,6 +25,7 @@ import SetupNotice from "@/components/SetupNotice";
 import ProgressBar from "@/components/ProgressBar";
 import PhotoGrid from "@/components/PhotoGrid";
 import PrivacyModeChoice from "@/components/PrivacyModeChoice";
+import HowItWorks from "@/components/HowItWorks";
 
 type PrivacyMode = "private" | "smart" | null;
 
@@ -43,6 +44,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [exportedFolderId, setExportedFolderId] = useState<string | null>(null);
   const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(null);
+  const [showHelp, setShowHelp] = useState(true);
   // Lazy-init from the user's own browser storage; this field is never part of
   // the server-rendered shell (only shown after interaction), so no hydration
   // mismatch risk from reading localStorage here.
@@ -82,6 +84,7 @@ export default function Home() {
       setFolder(picked);
       setPrivacyMode(null);
       setStage("scanning");
+      setShowHelp(false);
 
       setProgress({ label: "Listing photos", done: 0, total: 0 });
       const photos = await listPhotosInFolder(picked.id, token);
@@ -207,10 +210,20 @@ export default function Home() {
 
   return (
     <main className="mx-auto max-w-6xl p-6">
-      <h1 className="mb-1 text-2xl font-semibold">Photo Curator</h1>
-      <p className="mb-6 text-sm text-gray-500">
+      <div className="mb-1 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Photo Curator</h1>
+        <button
+          onClick={() => setShowHelp((v) => !v)}
+          className="rounded border px-3 py-1 text-xs font-medium hover:bg-gray-50 dark:hover:bg-gray-900"
+        >
+          {showHelp ? "Hide" : "How it works"}
+        </button>
+      </div>
+      <p className="mb-4 text-sm text-gray-500">
         Runs under your own Google account — nothing is uploaded anywhere except back to your Drive.
       </p>
+
+      {showHelp && <HowItWorks />}
 
       {error && (
         <div className="mb-4 rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200">
