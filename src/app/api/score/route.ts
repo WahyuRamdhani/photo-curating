@@ -27,17 +27,18 @@ const RESPONSE_SCHEMA = {
 };
 
 export async function POST(req: NextRequest) {
-  const { imageBase64, mimeType, apiKey: userApiKey } = await req.json();
+  const { imageBase64, mimeType, apiKey } = await req.json();
   if (!imageBase64 || !mimeType) {
     return NextResponse.json({ error: "Missing imageBase64 or mimeType" }, { status: 400 });
   }
 
-  // Prefer the caller's own key (each person's usage counts against their own
-  // free quota) and fall back to a shared server key if the app owner set one.
-  const apiKey = userApiKey || process.env.GEMINI_API_KEY;
+  // Deliberately no server-side fallback key: every caller must bring their
+  // own, so smart scoring always counts against the requester's own free
+  // quota, never a shared one, and the extra step of getting a key stays a
+  // real speed bump between the private and the send-to-Google path.
   if (!apiKey) {
     return NextResponse.json(
-      { error: "No Gemini API key available. Add your own free key in the app, or ask the app owner to set GEMINI_API_KEY." },
+      { error: "No Gemini API key provided. Paste your own free key in the app to use smart scoring." },
       { status: 400 }
     );
   }

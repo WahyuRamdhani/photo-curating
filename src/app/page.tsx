@@ -5,7 +5,6 @@ import {
   GEMINI_KEY_STORAGE_KEY,
   GOOGLE_API_KEY,
   GOOGLE_CLIENT_ID,
-  HAS_SERVER_GEMINI_KEY,
   MAX_TARGET,
   MIN_TARGET,
   isGoogleConfigured,
@@ -137,6 +136,10 @@ export default function Home() {
   }, []);
 
   const handleRunSmartScoring = useCallback(async () => {
+    if (!geminiApiKey) {
+      setError("Paste your own free Gemini API key first — there's no shared fallback key.");
+      return;
+    }
     const shortlist = curated.filter(isKept);
     if (shortlist.length === 0) {
       setError("Nothing passed the local checks to score.");
@@ -250,7 +253,6 @@ export default function Home() {
             shortlistCount={keptCount}
             apiKey={geminiApiKey}
             onApiKeyChange={setGeminiApiKey}
-            hasServerKey={HAS_SERVER_GEMINI_KEY}
             onChoosePrivate={handlePrivateReview}
             onChooseSmart={handleRunSmartScoring}
           />

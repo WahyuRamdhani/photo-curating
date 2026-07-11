@@ -4,14 +4,12 @@ export default function PrivacyModeChoice({
   shortlistCount,
   apiKey,
   onApiKeyChange,
-  hasServerKey,
   onChoosePrivate,
   onChooseSmart,
 }: {
   shortlistCount: number;
   apiKey: string;
   onApiKeyChange: (key: string) => void;
-  hasServerKey: boolean;
   onChoosePrivate: () => void;
   onChooseSmart: () => void;
 }) {
@@ -63,7 +61,7 @@ export default function PrivacyModeChoice({
             </p>
             <div>
               <label className="mb-1 block font-medium" htmlFor="gemini-key">
-                Your own free Gemini API key (recommended)
+                Your own free Gemini API key (required — no shared key, by design)
               </label>
               <input
                 id="gemini-key"
@@ -75,23 +73,22 @@ export default function PrivacyModeChoice({
               />
               <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-400">
                 Stored only in your browser (never sent anywhere except directly to Google
-                for scoring). Using your own key means this run counts against{" "}
-                <strong>your</strong> free quota, not anyone else&apos;s.
-                {hasServerKey && !apiKey && (
-                  <> Leave blank to use the app&apos;s shared key instead — that shares quota with everyone else using this app.</>
-                )}
+                for scoring). There is no fallback shared key — everyone brings their own,
+                so this run always counts against <strong>your</strong> free quota, and
+                getting a key is a deliberate extra step before any photo data leaves your
+                browser.
               </p>
             </div>
             <button
               onClick={onChooseSmart}
-              disabled={!apiKey && !hasServerKey}
+              disabled={!apiKey}
               className="w-full rounded bg-amber-700 px-3 py-2 font-medium text-white hover:bg-amber-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               I understand — send thumbnails to Google
             </button>
-            {!apiKey && !hasServerKey && (
+            {!apiKey && (
               <p className="text-[11px] text-red-700 dark:text-red-400">
-                No key available — paste your own free key above to continue.
+                Paste your own free key above to continue.
               </p>
             )}
           </div>
