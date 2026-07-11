@@ -2,8 +2,10 @@
 
 import { useCallback, useRef, useState } from "react";
 import {
+  GEMINI_KEY_STORAGE_KEY,
   GOOGLE_API_KEY,
   GOOGLE_CLIENT_ID,
+  HAS_SERVER_GEMINI_KEY,
   MAX_TARGET,
   MIN_TARGET,
   isGoogleConfigured,
@@ -42,7 +44,24 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [exportedFolderId, setExportedFolderId] = useState<string | null>(null);
   const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(null);
+  // Lazy-init from the user's own browser storage; this field is never part of
+  // the server-rendered shell (only shown after interaction), so no hydration
+  // mismatch risk from reading localStorage here.
+  const [geminiApiKey, setGeminiApiKeyState] = useState<string>(() =>
+    typeof window === "undefined"
+      ? ""
+      : (window.localStorage.getItem(GEMINI_KEY_STORAGE_KEY) ?? "")
+  );
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  const setGeminiApiKey = useCallback((key: string) => {
+    setGeminiApiKeyState(key);
+    if (key) {
+      window.localStorage.setItem(GEMINI_KEY_STORAGE_KEY, key);
+    } else {
+      window.localStorage.removeItem(GEMINI_KEY_STORAGE_KEY);
+    }
+  }, []);
 
   const handleConnect = useCallback(async () => {
     setError(null);
@@ -131,7 +150,7 @@ export default function Home() {
       img: imgCacheRef.current.get(c.photo.id)!,
     }));
     const { scorePhotosSequentially } = await import("@/lib/gemini/scorePhoto");
-    const results = await scorePhotosSequentially(items, (done, total) =>
+    const results = await scorePhotosSequentially(items, geminiApiKey, (done, total) =>
       setProgress({ label: "Smart scoring shortlist", done, total })
     );
     const resultMap = new Map(results.map((r) => [r.fileId, r]));
@@ -139,7 +158,7 @@ export default function Home() {
       prev.map((c) => (resultMap.has(c.photo.id) ? { ...c, stage2: resultMap.get(c.photo.id)! } : c))
     );
     setStage("final-review");
-  }, [curated]);
+  }, [curated, geminiApiKey]);
 
   const handleToggleKeep = useCallback((fileId: string) => {
     setCurated((prev) =>
@@ -229,6 +248,9 @@ export default function Home() {
           </p>
           <PrivacyModeChoice
             shortlistCount={keptCount}
+            apiKey={geminiApiKey}
+            onApiKeyChange={setGeminiApiKey}
+            hasServerKey={HAS_SERVER_GEMINI_KEY}
             onChoosePrivate={handlePrivateReview}
             onChooseSmart={handleRunSmartScoring}
           />

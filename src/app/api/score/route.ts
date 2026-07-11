@@ -27,21 +27,23 @@ const RESPONSE_SCHEMA = {
 };
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "GEMINI_API_KEY is not configured on the server (.env.local)" },
-      { status: 500 }
-    );
-  }
-
-  const { imageBase64, mimeType } = await req.json();
+  const { imageBase64, mimeType, apiKey: userApiKey } = await req.json();
   if (!imageBase64 || !mimeType) {
     return NextResponse.json({ error: "Missing imageBase64 or mimeType" }, { status: 400 });
   }
 
+  // Prefer the caller's own key (each person's usage counts against their own
+  // free quota) and fall back to a shared server key if the app owner set one.
+  const apiKey = userApiKey || process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json(
+      { error: "No Gemini API key available. Add your own free key in the app, or ask the app owner to set GEMINI_API_KEY." },
+      { status: 400 }
+    );
+  }
+
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

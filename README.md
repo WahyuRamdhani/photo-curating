@@ -22,7 +22,10 @@ straight into your browser and processed there.
    to Gemini's free tier to score against the shoot brief (professionalism,
    framing style, candid/posed eye-contact rules, selfie-in-group detection).
    Skippable if you'd rather review manually — diversity/representation is
-   intentionally left to your judgement either way, not auto-classified.
+   intentionally left to your judgement either way, not auto-classified. If
+   you're sharing this app with others, each person can paste in their own
+   free Gemini key (stored only in their browser) so smart scoring counts
+   against *their* quota, not a shared one — see below.
 4. **Review & export** — grid view with keep/reject overrides and a running
    count toward your target. Exporting copies the selected files into a new
    "Selected" folder inside the source folder via a Drive-to-Drive copy — no
@@ -38,9 +41,16 @@ straight into your browser and processed there.
    - An **API key**.
 4. Copy `.env.local.example` to `.env.local` and fill in
    `NEXT_PUBLIC_GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_GOOGLE_API_KEY`.
-5. (Optional, for the smart scoring stage) Get a free key at
-   [aistudio.google.com/apikey](https://aistudio.google.com/apikey) and set
-   `GEMINI_API_KEY` in the same file.
+5. Smart scoring needs a Gemini key, but *whose* key is a choice:
+   - **Sharing the app with others?** Leave `GEMINI_API_KEY` blank. Everyone
+     pastes their own free key (from
+     [aistudio.google.com/apikey](https://aistudio.google.com/apikey)) into
+     the app when they use smart scoring — each person's usage counts
+     against their own quota, and no shared secret needs to be deployed at
+     all.
+   - **Just using it yourself?** Set `GEMINI_API_KEY` in `.env.local` and
+     `NEXT_PUBLIC_HAS_SERVER_GEMINI_KEY=true`, and you won't need to paste a
+     key into the app each time.
 
 ## Run
 
