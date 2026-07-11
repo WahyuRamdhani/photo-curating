@@ -23,6 +23,9 @@ import { CuratedPhoto, PipelineStage } from "@/types/photo";
 import SetupNotice from "@/components/SetupNotice";
 import ProgressBar from "@/components/ProgressBar";
 import PhotoGrid from "@/components/PhotoGrid";
+import PrivacyModeChoice from "@/components/PrivacyModeChoice";
+
+type PrivacyMode = "private" | "smart" | null;
 
 function isKept(c: CuratedPhoto): boolean {
   if (c.manualKeep !== null) return c.manualKeep;
@@ -38,6 +41,7 @@ export default function Home() {
   const [progress, setProgress] = useState({ label: "", done: 0, total: 0 });
   const [error, setError] = useState<string | null>(null);
   const [exportedFolderId, setExportedFolderId] = useState<string | null>(null);
+  const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(null);
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const handleConnect = useCallback(async () => {
@@ -58,6 +62,7 @@ export default function Home() {
       const picked = await pickFolder({ apiKey: GOOGLE_API_KEY, accessToken: token });
       if (!picked) return;
       setFolder(picked);
+      setPrivacyMode(null);
       setStage("scanning");
 
       setProgress({ label: "Listing photos", done: 0, total: 0 });
@@ -107,12 +112,18 @@ export default function Home() {
     }
   }, [token]);
 
+  const handlePrivateReview = useCallback(() => {
+    setPrivacyMode("private");
+    setStage("final-review");
+  }, []);
+
   const handleRunSmartScoring = useCallback(async () => {
     const shortlist = curated.filter(isKept);
     if (shortlist.length === 0) {
       setError("Nothing passed the local checks to score.");
       return;
     }
+    setPrivacyMode("smart");
     setStage("semantic-scoring");
     setProgress({ label: "Smart scoring shortlist", done: 0, total: shortlist.length });
     const items = shortlist.map((c) => ({
@@ -211,24 +222,16 @@ export default function Home() {
 
       {stage === "shortlist-review" && (
         <div className="space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-sm">
-              Local checks: <strong>{shortlistCount}</strong> passed out of{" "}
-              <strong>{curated.length}</strong>. Click any card to override.
-            </p>
-            <button
-              onClick={handleRunSmartScoring}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Run smart scoring on shortlist ({keptCount})
-            </button>
-            <button
-              onClick={() => setStage("final-review")}
-              className="rounded border px-4 py-2 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-900"
-            >
-              Skip smart scoring, review manually
-            </button>
-          </div>
+          <p className="text-sm">
+            Local checks: <strong>{shortlistCount}</strong> passed out of{" "}
+            <strong>{curated.length}</strong>. Click any card below to override, then choose
+            how to finish reviewing the {keptCount} shortlisted photos.
+          </p>
+          <PrivacyModeChoice
+            shortlistCount={keptCount}
+            onChoosePrivate={handlePrivateReview}
+            onChooseSmart={handleRunSmartScoring}
+          />
           <PhotoGrid items={curated} onToggleKeep={handleToggleKeep} />
         </div>
       )}
@@ -236,6 +239,17 @@ export default function Home() {
       {stage === "final-review" && (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                privacyMode === "smart"
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
+                  : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+              }`}
+            >
+              {privacyMode === "smart"
+                ? "Mode: Smart scoring — thumbnails sent to Google"
+                : "Mode: Private — nothing left your browser"}
+            </span>
             <p
               className={`text-sm font-medium ${
                 keptCount < MIN_TARGET || keptCount > MAX_TARGET
@@ -260,6 +274,11 @@ export default function Home() {
         <div className="space-y-3">
           <p className="font-medium text-green-700 dark:text-green-400">
             Done! {keptCount} photos copied into a new &quot;Selected&quot; folder.
+          </p>
+          <p className="text-sm text-gray-500">
+            {privacyMode === "smart"
+              ? "Smart scoring was used — thumbnails of the shortlist were sent to Google's Gemini API."
+              : "Private mode — no photo data left your browser at any point."}
           </p>
           {exportedFolderId && (
             <a
